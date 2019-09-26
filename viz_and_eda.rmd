@@ -1,13 +1,145 @@
 ---
-title: "viz_and_eda"
+title: "GG Plot 1"
 author: "Kylie Wheelock Riley"
 date: "9/26/2019"
-output: html_document
+output: github_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(ggridges)
+```
+
+## Create weather data 
+```{r}
+weather_df = 
+  ## Dowloading wather from 3 stations
+  rnoaa::meteo_pull_monitors(c("USW00094728", "USC00519397", "USS0023B17S"),
+                      var = c("PRCP", "TMIN", "TMAX"), 
+                      date_min = "2017-01-01",
+                      date_max = "2017-12-31") %>%
+  mutate(
+    name = recode(id, USW00094728 = "CentralPark_NY", 
+                      USC00519397 = "Waikiki_HA",
+                      USS0023B17S = "Waterhole_WA"),
+    tmin = tmin / 10,
+    tmax = tmax / 10) %>%
+  select(name, id, everything())
+weather_df
+```
+
+## Create a gg plot
+
+```{r}
+ggplot(weather_df, aes(x = tmin, y = tmax)) + 
+  geom_point()
+
+##alternate way of making this plot
+weather_df %>% 
+  ggplot(aes(x = tmin, y = tmax)) + 
+  geom_point()
+```
+
+## Saving initial plots
+```{r}
+scatterplot = 
+  weather_df %>% 
+  ggplot(aes(x = tmin, y = tmax)) + 
+  geom_point()
+```
+
+## Adding color
+
+```{r}
+weather_df %>% 
+  ggplot(aes(x = tmin, y = tmax)) + 
+  geom_point(aes(color = name), alpha = .4)
+```
+
+## Why do aestetic "aes" positions matter?
+
+```{r}
+weather_df %>% 
+  ggplot(aes(x = tmin, y = tmax)) + 
+  geom_point(aes(color = name), alpha = .4) +
+  geom_smooth(se = FALSE)
+```
+
+## Facets
+
+```{r}
+weather_df %>% 
+  ggplot(aes(x = tmin, y = tmax)) + 
+  geom_point(aes(color = name), alpha = .4) +
+  geom_smooth(se = FALSE) +
+  facet_grid(~name)
+```
+
+## More meaningful graphs
+```{r}
+weather_df %>% 
+  ggplot(aes(x = date, y = tmax, color = name)) +
+  geom_point(aes(size = prcp), alpha = 0.35) +
+  geom_smooth(size = 2, se = FALSE)
+```
+
+## Do Learning Assessment 1 here 
+
+## More things
+THe geoms that you choose are independent and can be what you think are most useful 
+```{r}
+weather_df %>% 
+  ggplot(aes(x = date, y = tmax, color = name)) +
+  geom_smooth(size = 2, se = FALSE)
 ```
 
 
+## 2D density
+Hex is good for not showing all of the data in large datasets
+```{r}
+##can usegeom_hex if you install (install.packages("hexbin))
+weather_df %>% 
+  ggplot(aes(x = tmin, y = tmax, color = name)) +
+  geom_bin2d()
+```
+
+## More plots
+```{r}
+weather_df %>% 
+  ggplot(aes(x = tmax, fill = name)) +
+  geom_histogram() +
+  facet_grid(~name)
+```
+
+density plots
+```{r}
+weather_df %>% 
+  ggplot(aes(x = tmax, fill = name)) +
+   geom_density(alpha = .3) 
+  
+```
+
+boxplot
+```{r}
+weather_df %>% 
+  ggplot(aes( x = name, y = tmax)) +
+  geom_boxplot()
+```
+
+violin plot
+```{r}
+weather_df %>% 
+  ggplot(aes( x = name, y = tmax)) +
+  geom_violin()
+```
+
+ridge plots
+```{r}
+weather_df %>% 
+  ggplot(aes(x = tmax, y = name)) +
+  geom_density_ridges(scale = .85)
+  
+```
 
