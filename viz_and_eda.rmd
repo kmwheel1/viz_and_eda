@@ -1,0 +1,13 @@
+---
+title: "viz_and_eda"
+author: "Kylie Wheelock Riley"
+date: "9/26/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
