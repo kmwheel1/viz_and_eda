@@ -143,3 +143,32 @@ weather_df %>%
   
 ```
 
+## Saving a plot
+
+```{r}
+ggp_ridge_temp =
+  weather_df %>% 
+  ggplot(aes(x = tmax, y = name)) +
+  geom_density_ridges()
+
+ggsave("ggplot_temp_ridge.pdf", ggp_ridge_temp)
+  
+```
+
+imbedding a plot
+```{r, fig.width = 6}
+weather_df %>% 
+  ggplot(aes(x = tmin, y = tmax)) + 
+  geom_point(alpha = .4) +
+  geom_smooth(se = FALSE) 
+
+```
+
+```{r, fig.width = 12}
+weather_df %>% 
+  ggplot(aes(x = tmin, y = tmax)) + 
+  geom_point(alpha = .4) +
+  geom_smooth(se = FALSE) 
+```
+
+

@@ -1,0 +1,164 @@
+---
+title: "GG Plot 2"
+author: "Kylie Wheelock Riley"
+date: "10/1/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ggridges)
+```
+
+
+## Create weather data 
+```{r load_data, cache = TRUE}
+##Cache only runs this dataset once so each time you knit it is not pulling it from the server. 
+
+weather_df = 
+  ## Dowloading wather from 3 stations
+  rnoaa::meteo_pull_monitors(c("USW00094728", "USC00519397", "USS0023B17S"),
+                      var = c("PRCP", "TMIN", "TMAX"), 
+                      date_min = "2017-01-01",
+                      date_max = "2017-12-31") %>%
+  mutate(
+    name = recode(id, USW00094728 = "CentralPark_NY", 
+                      USC00519397 = "Waikiki_HA",
+                      USS0023B17S = "Waterhole_WA"),
+    tmin = tmin / 10,
+    tmax = tmax / 10) %>%
+  select(name, id, everything())
+weather_df
+```
+
+## Adding labels to a gg plot
+```{r}
+ggplot(weather_df, aes(x = tmin, y = tmax, color = name)) + 
+  geom_point(alpha = 0.5) + 
+  labs(
+    title = "Temperature Plot",
+    x = "Minimum Temp (C)",
+    y = "Maximum Temp (C)",
+    caption = "Data from NOAA via rnoaa package"
+  ) +
+  scale_x_continuous(
+    breaks = c(-15, -5, 20),
+    labels = c("-15C", "-5C", "20C")
+  ) +
+  ##taking sqrt, good for non nomally distributed data
+  ##Not very useful here because it drops all of the negative data
+  scale_y_continuous(
+    trans = "sqrt"
+  )
+
+
+```
+
+## Choosing colors in gg plot using scale_color_hue
+```{r}
+ggplot(weather_df, aes(x = tmin, y = tmax, color = name)) + 
+  geom_point(alpha = 0.5) + 
+  labs(
+    title = "Temperature Plot",
+    x = "Minimum Temp (C)",
+    y = "Maximum Temp (C)",
+    caption = "Data from NOAA via rnoaa package"
+    ) +
+  scale_color_hue(
+    name = "Weather Station",
+    h = c(100, 200)
+  )
+      
+```
+
+## viridis package good for color blind
+```{r}
+ggp_temp_plot = 
+  weather_df %>% 
+  ggplot(aes(x = tmin, y = tmax)) + 
+  geom_point(aes(color = name), alpha = .5) + 
+  labs(
+    title = "Temperature plot",
+    x = "Minimum daily temperature (C)",
+    y = "Maxiumum daily temperature (C)",
+    caption = "Data from the rnoaa package"
+  ) + 
+  viridis::scale_color_viridis(
+    name = "Location", 
+    discrete = TRUE
+    ##variable used is a discrete variable, do ned to specify that it is true
+  )
+```
+
+## Themes 
+
+Changes general organizarion
+
+```{r}
+##generally good to plot legend on the bottom, so you have more room for your actual graph
+ggp_temp_plot + 
+  theme(legend.position = "bottom")
+
+```
+### Black and white plot
+```{r}
+ggp_temp_plot + 
+  theme_bw() +
+  theme(legend.position = "bottom")
+```
+### Minimal plot theme
+```{r}
+ggp_temp_plot + 
+  theme_minimal()+
+  theme(legend.position = "bottom")
+```
+
+where do warning come from
+```{r}
+weather_df %>% 
+  filter(is.na(tmin))
+```
+
+## More than 1 dataset
+Figure out why not working after class
+```{r}
+central_park = 
+  weather_df %>% 
+  filter(name == "Central_Park_NY")
+
+waikiki = 
+  weather_df %>% 
+  filter(name == "Waikiki_HI")
+
+ggplot(data = waikiki, aes(x = date, y = tmax, color = name)) +
+  geom_point(aes(size = prcp)) +
+  geom_line(data = central_park)
+
+```
+
+brief aside about colors
+```{r}
+waikiki %>% 
+  ggplot(aes(x = date, y = tmax)) +
+  geom_point(alpha = .5, color = "blue")
+```
+
+
+## Multi-panel plots 
+patchwork package, install after class
+
+```{r}
+ggp_scatter =
+  weather_df %>%
+  ggplot(aes(x = tmin, y = tmax)) +
+  geom_point()
+
+ggp_density = 
+  weather_df %>%
+  ggplot(aes(x = tmin)) +
+  geom_density()
+
+
+```
+
