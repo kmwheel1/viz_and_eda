@@ -129,7 +129,7 @@ central_park =
 
 waikiki = 
   weather_df %>% 
-  filter(name == "Waikiki_HI")
+  filter(name == "Waikiki_HA")
 
 ggplot(data = waikiki, aes(x = date, y = tmax, color = name)) +
   geom_point(aes(size = prcp)) +
@@ -159,6 +159,17 @@ ggp_density =
   ggplot(aes(x = tmin)) +
   geom_density()
 
-
+ggp_box = 
+  weather_df %>%
+  ggplot(aes(x = name, y = tmax), color = name) +
+  geom_boxplot()
 ```
+
+## data manipulation
+setting it as a factor allows you to have nicer organization ?
+check after class
+
+
+
+reorder
 
