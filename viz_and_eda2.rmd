@@ -29,33 +29,55 @@ weather_df =
     tmin = tmin / 10,
     tmax = tmax / 10) %>%
   select(name, id, everything())
-weather_df
 ```
 
 ## Adding labels to a gg plot
 ```{r}
-ggplot(weather_df, aes(x = tmin, y = tmax, color = name)) + 
-  geom_point(alpha = 0.5) + 
+weather_df %>% 
+  ggplot(aes(x = tmin, y = tmax)) + 
+  geom_point(aes(color = name), alpha = .5) + 
   labs(
-    title = "Temperature Plot",
-    x = "Minimum Temp (C)",
-    y = "Maximum Temp (C)",
-    caption = "Data from NOAA via rnoaa package"
-  ) +
-  scale_x_continuous(
-    breaks = c(-15, -5, 20),
-    labels = c("-15C", "-5C", "20C")
-  ) +
-  ##taking sqrt, good for non nomally distributed data
-  ##Not very useful here because it drops all of the negative data
-  scale_y_continuous(
-    trans = "sqrt"
+    title = "Temperature plot",
+    x = "Minimum daily temperature (C)",
+    y = "Maxiumum daily temperature (C)",
+    caption = "Data from the rnoaa package"
   )
-
 
 ```
 
-## Choosing colors in gg plot using scale_color_hue
+## Location of ticks on axes using scale_x_ and scale_y_
+```{r}
+weather_df %>% 
+  ggplot(aes(x = tmin, y = tmax)) + 
+  geom_point(aes(color = name), alpha = .5) + 
+  labs(
+    title = "Temperature plot",
+    x = "Minimum daily temperature (C)",
+    y = "Maxiumum daily temperature (C)",
+    caption = "Data from the rnoaa package") + 
+  scale_x_continuous(
+    breaks = c(-15, 0, 15), 
+    labels = c("-15º C", "0", "15"))
+
+##the version below also scales the y axis using a sqrt, good for log tansformed vars
+weather_df %>% 
+  ggplot(aes(x = tmin, y = tmax)) + 
+  geom_point(aes(color = name), alpha = .5) + 
+  labs(
+    title = "Temperature plot",
+    x = "Minimum daily temperature (C)",
+    y = "Maxiumum daily temperature (C)",
+    caption = "Data from the rnoaa package") + 
+  scale_x_continuous(
+    breaks = c(-15, 0, 15), 
+    labels = c("-15ºC", "0", "15"),
+    limits = c(-20, 30)) + 
+  scale_y_continuous(
+    trans = "sqrt", 
+    position = "right")
+```
+
+## Colors and themes using scale_color_hue
 ```{r}
 ggplot(weather_df, aes(x = tmin, y = tmax, color = name)) + 
   geom_point(alpha = 0.5) + 
@@ -72,7 +94,7 @@ ggplot(weather_df, aes(x = tmin, y = tmax, color = name)) +
       
 ```
 
-## viridis package good for color blind
+## Using viridis for more specific/ specialized color schemes
 ```{r}
 ggp_temp_plot = 
   weather_df %>% 
@@ -87,13 +109,17 @@ ggp_temp_plot =
   viridis::scale_color_viridis(
     name = "Location", 
     discrete = TRUE
-    ##variable used is a discrete variable, do ned to specify that it is true
   )
+
+ggp_temp_plot
+
+## The sample above uses the defauly viridis scheme, can choose more specific ones
+## used discrete = TRUE because the color aesthetic is mapped to a discrete variable. For continuous variables you can omit this. 
 ```
 
 ## Themes 
 
-Changes general organizarion
+Changes general organization
 
 ```{r}
 ##generally good to plot legend on the bottom, so you have more room for your actual graph
@@ -101,41 +127,78 @@ ggp_temp_plot +
   theme(legend.position = "bottom")
 
 ```
-### Black and white plot
+
+### bw theme, not black and white
 ```{r}
 ggp_temp_plot + 
-  theme_bw() +
+  theme_bw() + 
   theme(legend.position = "bottom")
 ```
+
+### Classic theme
+```{r}
+ggp_temp_plot + 
+  theme_classic() + 
+  theme(legend.position = "bottom")
+```
+
 ### Minimal plot theme
 ```{r}
 ggp_temp_plot + 
-  theme_minimal()+
+  theme_minimal() +
   theme(legend.position = "bottom")
 ```
 
-where do warning come from
+## Learning Assessment 1
+Revisit the plot showing tmax against date for each location. Use labels, scale options, and theme changes to improve the readability of this plot.
+
 ```{r}
 weather_df %>% 
-  filter(is.na(tmin))
+  ggplot(aes(x = date, y = tmax)) + 
+  geom_point(aes(color = name), alpha = .5) + 
+  labs(
+    title = "Maximum Temperature plot",
+    x = "Date",
+    y = "Maxiumum daily temperature (C)",
+    caption = "Data from the rnoaa package"
+  ) +
+    theme_minimal() +
+  theme(legend.position = "bottom")
+
 ```
 
-## More than 1 dataset
-Figure out why not working after class
+# Setting Options
+
+```{r}
+##Use this code at the topof every .rmd file to keep figure formatting consistent
+library(tidyverse)
+
+knitr::opts_chunk$set(
+  fig.width = 6,
+  fig.asp = .6,
+  out.width = "90%"
+)
+
+theme_set(theme_bw() + theme(legend.position = "bottom"))
+```
+
+# Data Arguments in geom
+Better understandingofhow each layer / piece of code works in an example that splits weather_df into separate datasets for Central Park and Waikiki 
 ```{r}
 central_park = 
   weather_df %>% 
-  filter(name == "Central_Park_NY")
+  filter(name == "CentralPark_NY")
 
 waikiki = 
   weather_df %>% 
   filter(name == "Waikiki_HA")
 
-ggplot(data = waikiki, aes(x = date, y = tmax, color = name)) +
-  geom_point(aes(size = prcp)) +
+ggplot(data = waikiki, aes(x = date, y = tmax, color = name)) + 
+  geom_point() + 
   geom_line(data = central_park)
 
 ```
+
 
 brief aside about colors
 ```{r}
@@ -145,56 +208,87 @@ waikiki %>%
 ```
 
 
-## Multi-panel plots 
-patchwork package, install after class
+## Patchwork - Multi-panel plots 
 
 ```{r}
-ggp_scatter =
-  weather_df %>%
-  ggplot(aes(x = tmin, y = tmax)) +
-  geom_point()
+tmax_tmin_p = 
+  weather_df %>% 
+  ggplot(aes(x = tmax, y = tmin, color = name)) + 
+  geom_point(alpha = .5) +
+  theme(legend.position = "none")
 
-ggp_density = 
-  weather_df %>%
-  ggplot(aes(x = tmin)) +
-  geom_density()
+prcp_dens_p = 
+  weather_df %>% 
+  filter(prcp > 0) %>% 
+  ggplot(aes(x = prcp, fill = name)) + 
+  geom_density(alpha = .5) + 
+  theme(legend.position = "none")
 
-ggp_box = 
-  weather_df %>%
-  ggplot(aes(x = name, y = tmax), color = name) +
-  geom_boxplot()
+tmax_date_p = 
+  weather_df %>% 
+  ggplot(aes(x = date, y = tmax, color = name)) + 
+  geom_point(alpha = .5) +
+  geom_smooth(se = FALSE) + 
+  theme(legend.position = "bottom")
+
+##(tmax_tmin_p + prcp_dens_p) / tmax_date_p
 ```
 
-## data manipulation
-setting it as a factor allows you to have nicer organization ?
-check after class
+# Data Manipulation
+tidy data allows you to make nicer grapha
+setting it as a factor allows you to have nicer organization 
 
+## Ordering factor Variables 
 ```{r}
-weather_df %>% 
-  mutate(
-    name = factor(name),
-    name = fct_relevel(name, "Waterhole_WA", "Waikiki_HA", "Central_Park_NY" tmax)
-  ) %>% 
-  ggplot(aes(x = name, y = tmax, color = name)) + 
-  geom_boxplot()
+##You can change the order level of a factor variable to your specified preference using forcats::fct_relevel or according to the value of another variable using forcats::fct_reorder.
+
+## Reordering by hand
+weather_df %>%
+  mutate(name = forcats::fct_relevel(name, c("Waikiki_HA", "CentralPark_NY", "Waterhole_WA"))) %>% 
+  ggplot(aes(x = name, y = tmax)) + 
+  geom_violin(aes(fill = name), color = "blue", alpha = .5) + 
+  theme(legend.position = "bottom")
+
+## Reordering name according to tmax values in each name
+weather_df %>%
+  mutate(name = forcats::fct_reorder(name, tmax)) %>% 
+  ggplot(aes(x = name, y = tmax)) + 
+  geom_violin(aes(fill = name), color = "blue", alpha = .5) + 
+  theme(legend.position = "bottom")
 ```
 
-reorder
+## Separating into separate plots (tmax and tmin by location)
 ```{r}
-
-```
-
-##restrucutre then plot
-sometimes you will need to tidy the data in order to generate the plots you want
-```{r}
-weather_df %>% 
+weather_df %>%
+  select(name, tmax, tmin) %>% 
   pivot_longer(
     tmax:tmin,
-    names_to = "observation",
-    values_to = "temperature") %>%
-  ggplot(aes(x = temperature, fill = observation)) +
-  geom_density(alpha = 0.5) +
-  facet_grid(~name) +
-  theme(legend_position = "bottom")
+    names_to = "observation", 
+    values_to = "temp") %>% 
+  ggplot(aes(x = temp, fill = observation)) +
+  geom_density(alpha = .5) + 
+  facet_grid(~name) + 
+  viridis::scale_fill_viridis(discrete = TRUE)
 ```
+
+## Using pitvot_longer to rearrange data for plot
+```{r}
+pulse_data = 
+  haven::read_sas("./data/public_pulse_data.sas7bdat") %>%
+  janitor::clean_names() %>%
+  pivot_longer(
+    bdi_score_bl:bdi_score_12m,
+    names_to = "visit", 
+    names_prefix = "bdi_score_",
+    values_to = "bdi") %>%
+  select(id, visit, everything()) %>%
+  mutate(visit = recode(visit, "bl" = "00m"),
+         visit = factor(visit, levels = str_c(c("00", "01", "06", "12"), "m"))) %>%
+  arrange(id, visit)
+
+ggplot(pulse_data, aes(x = visit, y = bdi)) + 
+  geom_boxplot()
+```
+
+
 
