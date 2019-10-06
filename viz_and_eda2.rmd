@@ -169,7 +169,32 @@ ggp_box =
 setting it as a factor allows you to have nicer organization ?
 check after class
 
-
+```{r}
+weather_df %>% 
+  mutate(
+    name = factor(name),
+    name = fct_relevel(name, "Waterhole_WA", "Waikiki_HA", "Central_Park_NY" tmax)
+  ) %>% 
+  ggplot(aes(x = name, y = tmax, color = name)) + 
+  geom_boxplot()
+```
 
 reorder
+```{r}
+
+```
+
+##restrucutre then plot
+sometimes you will need to tidy the data in order to generate the plots you want
+```{r}
+weather_df %>% 
+  pivot_longer(
+    tmax:tmin,
+    names_to = "observation",
+    values_to = "temperature") %>%
+  ggplot(aes(x = temperature, fill = observation)) +
+  geom_density(alpha = 0.5) +
+  facet_grid(~name) +
+  theme(legend_position = "bottom")
+```
 
