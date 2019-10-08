@@ -26,6 +26,7 @@ theme_set(theme_minimal() + theme(legend.position = "bottom"))
 
 ```
 
+## Exploratory data analysis using group_by
 ```{r}
 weather_df = 
   rnoaa::meteo_pull_monitors(c("USW00094728", "USC00519397", "USS0023B17S"),
@@ -39,24 +40,25 @@ weather_df =
     tmin = tmin / 10,
     tmax = tmax / 10,
     month = lubridate::floor_date(date, unit = "month")) %>%
+  ##created month using lubridate
   select(name, id, date, month, everything())
 ```
 
-## 'group_by' and counting
+## 'group_by' for categorcial variables
 ```{r}
 weather_df %>% 
   group_by(name, month)
+##R will keep the groupings, so you may need to ungroup ()
+```
+
+## Counting
+```{r}
+weather_df %>%
+  count(month, name = "n_days")
 ```
 
 ```{r}
-## n_disctinct shows the humber of unique variables
-weather_df %>% 
-  group_by(name) %>% 
-  summarize(n_obs = n(),
-            n_unique = n_distinct(date))
-```
 
-```{r}
 ##If you just want a count of things you can go straight to count, no need to group and summarize
 weather_df %>% 
   count(name)
@@ -70,81 +72,85 @@ weather_df %>%
 ## can also use name in count, the default is n
 ```
 
-creating a table using r markdown format
+##Creating a table using r markdown format
 ```{r}
+weather_df %>%
+  pull(month) %>% 
+  table 
+
 ##making a nice table to export
 weather_df %>% 
   count(name) %>%
   knitr::kable()
 ```
 
-## 2x2 tables 
-AFTER CLASS LOOK UP REST OF LONG CODE
+## Summarize
 ```{r}
-weather_df %>% 
-  filter(name != "Waikiki_HA") %>% 
-  mutate(
-    cold = case_when(
-      tmax < 5 ~ "cold", 
-      tmax >= 5 ~ "not cold", 
-      TRUE      ~ "")
-  )%>% 
-  group_by(name, cold) %>% 
-  count() %>% 
-  pivot_wider(
-    names_from 
-  )
-
+##Summarize the number of observations in each month and the number of distinct values of date in each month.
+weather_df %>%
+  group_by(month) %>%
+  summarize(
+    n_obs = n(),
+    n_days = n_distinct(date))
 
 ```
 
+## 2x2 tables 
 ```{r}
 weather_df %>% 
-  filter(name != "Waikiki_HA") %>% 
   mutate(
     cold = case_when(
-      tmax < 5 ~ "cold", 
-      tmax >= 5 ~ "not cold", 
-      TRUE      ~ "")
-  )%>%
+      tmax < 5 ~ "cold",
+      tmax >=5 ~ "not_cold",
+      TRUE     ~ ""
+  )) %>% 
+  filter(name != "Waikiki_HA") %>% 
+  group_by(name, cold) %>% 
+  summarize(count = n())
+
+
+##^^ Tidy data table, but want to get it in formatting for 2x2
+weather_df %>% 
+  mutate(cold = case_when(
+    tmax < 5 ~ "cold",
+    tmax >=5 ~ "not_cold",
+    TRUE     ~ ""
+  )) %>% 
+  filter(name != "Waikiki_HA") %>% 
   janitor::tabyl(name, cold)
 
 ```
 
+
 ## general summaries
 ```{r}
-weather_df %>% 
-  group_by(name) %>% 
+weather_df %>%
+  group_by(month) %>%
   summarize(
-    n = n(),
-    mean_tmax = mean(tmax, na.rm = TRUE),
-    sd_max = sd(tmax, na.rm = TRUE), 
-    median_prcp = median(prcp, na.rm = TRUE)
-  )
+    mean_tmax = mean(tmax),
+    mean_prec = mean(prcp, na.rm = TRUE),
+    median_tmax = median(tmax),
+    sd_tmax = sd(tmax))
 ## There are NAs in the dataset, r will return NA/NAN because you cant take the mean of nothing, need to remove the NAs (na.rm = TRUE)
+
+## group by more than1 summary
+weather_df %>%
+  group_by(name, month) %>%
+  summarize(
+    mean_tmax = mean(tmax),
+    median_tmax = median(tmax))
 ```
 
 ```{r}
-weather_df %>% 
-  group_by(name, month) %>% 
-  summarize(
-    n = n(),
-    mean_tmax = mean(tmax, na.rm = TRUE),
-    sd_max = sd(tmax, na.rm = TRUE), 
-    median_prcp = median(prcp, na.rm = TRUE))
+##using summarize to make a plot
+weather_df %>%
+  group_by(name, month) %>%
+  summarize(mean_tmax = mean(tmax)) %>%
+  ggplot(aes(x = month, y = mean_tmax, color = name)) + 
+    geom_point() + geom_line() + 
+    theme(legend.position = "bottom")
 ```
 
-##general summaries
-
-```{r}
-weather_df %>% 
-  group_by(name) %>% 
-  summarize(
-    n = n(),
-    mean_tmax = mean(tmax, na.rm = TRUE),
-    sd_max = sd(tmax, na.rm = TRUE), 
-    median_prcp = median(prcp, na.rm = TRUE))
-```
 
 ## pivot to make more reader friendly summaries
 ```{r}
@@ -158,27 +164,19 @@ pivot_wider(
   
 ```
 
-## dont forget you can ungroup 
-```{r}
-weather_df %>% 
-  group_by(name) %>% 
-  ungroup()
-```
  
 ## group with mutate
 ```{r}
-weather_df %>% 
-  group_by(name) %>% 
-  mutate(
-    mean_tmax = mean(tmax, na.rm = TRUE),
-    centered_tmax = tmax - mean_tmax
-  ) %>% 
-  ggplot(aes(x = date, y = centered + tmax, color = name)) +
-  geom_point
+weather_df %>%
+  group_by(name) %>%
+  mutate(centered_tmax = tmax - mean(tmax)) %>% 
+  ggplot(aes(x = date, y = centered_tmax, color = name)) + 
+    geom_point()
 
 ```
 
 ## window functions in grouped mutate
+window function take n inputs and return n outputs, and the outputs depend on all the inputs. There are several categories of window functions; you’re most likely to need ranking functions and offsets, which we illustrate below.
 ```{r}
 weather_df %>% 
   group_by(name, month) %>% 
@@ -186,17 +184,50 @@ weather_df %>%
     tmax_rank = min_rank(tmax)
   ) %>% 
   filter(tmax_rank == 1)
+
+##only keeping day with lowest max temp
+weather_df %>%
+  group_by(name, month) %>%
+  filter(min_rank(tmax) < 2)
 ```
 
 ## Lags!
-
+Offsets, especially lags, are used to compare an observation to it’s previous value. This is useful, for example, to find the day-by-day change in max temperature within each station over the year:
 ```{r}
-weather_df %>% 
-  group_by(name) %>% 
-  mutate(
-    lagged_tmax = lag(tmax),
-    one_day_tmx_change = tmax - lagged_tmax
-  ) %>% 
-summarize(sd_daily_change = sd(one_day_tmx_change, na.rm = TRUE))
+weather_df %>%
+  group_by(name) %>%
+  mutate(temp_change = tmax - lag(tmax))
+
+##This kind of variable might be used to quantify the day-by-day variability in max temperature, or to identify the largest one-day increase:
+weather_df %>%
+  group_by(name) %>%
+  mutate(temp_change = tmax - lag(tmax)) %>%
+  summarize(temp_change_sd = sd(temp_change, na.rm = TRUE),
+            temp_change_max = max(temp_change, na.rm = TRUE))
 ```
 
+# Learning Assessment 1
+In the PULSE data, the primary outcome is BDI score; it’s observed over follow-up visits, and we might ask if the typical BDI score values are roughly similar at each. Try to write a code chunk that imports, cleans, and summarizes the PULSE data to examine the mean and median at each visit. Export the results of this in a reader-friendly format.
+```{r}
+library(haven)
+pulse_data = read_sas("./data/public_pulse_data.sas7bdat") %>% 
+  janitor::clean_names() %>% 
+  pivot_longer(
+    bdi_score_bl:bdi_score_12m,
+    names_to = "visit", 
+    names_prefix = "bdi_score_",
+    values_to = "bdi") %>%
+  select(id, visit, everything()) %>%
+  mutate(visit = recode(visit, "bl" = "00m"),
+         visit = factor(visit, levels = str_c(c("00", "01", "06", "12"), "m")))
+
+pulse_data %>% 
+  group_by(visit) %>% 
+  summarize(
+    mean_bdi = mean(bdi, na.rm = TRUE),
+    median_bdi = median(bdi, na.rm = TRUE)) %>% 
+  knitr::kable(digits = 3)
+  
+```
+
+# Learning Assessment 2
